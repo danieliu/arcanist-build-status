@@ -1,0 +1,16 @@
+{
+  "linters": {
+    "phutil-library": {
+      "type": "phutil-library",
+      "include": "(\\.php$)"
+    },
+    "xhpast": {
+      "type": "xhpast",
+      "include": "(\\.php$)"
+    },
+    "php": {
+      "type": "php",
+      "include": "(\\.php$)"
+    }
+  }
+}
