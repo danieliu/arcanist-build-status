@@ -46,7 +46,7 @@ EOTEXT
         pht('No branches in this working copy.'));
     }
 
-    $revisionToBranch = array();
+    $revision_to_branch = array();
     foreach ($branches as $branch) {
       $text = $branch['text'];
 
@@ -56,7 +56,7 @@ EOTEXT
 
         $branch['revisionID'] = $id;
         if ($id) {
-            $revisionToBranch[$id] = $branch;
+            $revision_to_branch[$id] = $branch;
         }
       } catch (ArcanistUsageException $ex) {
         // In case of invalid commit message which fails the parsing,
@@ -92,7 +92,7 @@ EOTEXT
       }
     }
 
-    return $revisionToBranch;
+    return $revision_to_branch;
   }
 
   private function loadActiveRevisions() {
@@ -112,12 +112,12 @@ EOTEXT
     return $revisions;
   }
 
-  private function loadBuildables(array $diffPHIDs) {
+  private function loadBuildables(array $diff_phids) {
     $buildables = $this->getConduit()->callMethodSynchronous(
       'harbormaster.buildable.search',
       array(
         'constraints' => array(
-          'objectPHIDs' => array_values($diffPHIDs),
+          'objectPHIDs' => array_values($diff_phids),
         ),
       ));
     if (!$buildables) {
@@ -125,24 +125,24 @@ EOTEXT
         return 0;
     }
 
-    $diffToBuildable = array();
+    $diff_to_buildable = array();
     foreach ($buildables['data'] as $buildable) {
-      $objectPHID = $buildable['fields']['objectPHID'];
-      $diffToBuildable[$objectPHID] = $buildable;
+      $object_phid = $buildable['fields']['objectPHID'];
+      $diff_to_buildable[$object_phid] = $buildable;
     }
-    return $diffToBuildable;
+    return $diff_to_buildable;
   }
 
   /*
-   * Extracts diffPHIDs for a list of revisions into revisionID => diffPHID
+   * Extracts diff phids for a list of revisions into revisionID => diffPHID
    */
   private function getDiffPHIDs(array $revisions) {
-    $diffPHIDs = array();
+    $diff_phids = array();
     foreach ($revisions as $revision) {
-        $diffPHID = idxv($revision, array('fields', 'diffPHID'));
-        $diffPHIDs[$revision['id']] = $diffPHID;
+        $diff_phid = idxv($revision, array('fields', 'diffPHID'));
+        $diff_phids[$revision['id']] = $diff_phid;
     }
-    return $diffPHIDs;
+    return $diff_phids;
   }
 
   private function printBuildStatuses($branches, $revisions, $buildables) {
@@ -166,8 +166,8 @@ EOTEXT
       $desc = 'D'.$revision_id.': '.$revision['fields']['title'];
       $status = $revision['fields']['status']['name'];
       $status_color = $revision['fields']['status']['color.ansi'];
-      $diffPHID = $revision['fields']['diffPHID'];
-      $build_status = $buildables[$diffPHID]['fields']['buildableStatus']['value'];
+      $diff_phid = $revision['fields']['diffPHID'];
+      $build_status = $buildables[$diff_phid]['fields']['buildableStatus']['value'];
       $build_color = idx($color_map, $build_status, array('default', 'default'));
       $branch = $branches[$revision_id];
       $epoch = $branch['epoch'];
@@ -217,8 +217,8 @@ EOTEXT
   public function run() {
     $branches = $this->loadCommitInfo();
     $revisions = $this->loadActiveRevisions();
-    $diffPHIDs = $this->getDiffPHIDs($revisions);
-    $buildables = $this->loadBuildables($diffPHIDs);
+    $diff_phids = $this->getDiffPHIDs($revisions);
+    $buildables = $this->loadBuildables($diff_phids);
     $this->printBuildStatuses($branches, $revisions, $buildables);
   }
 }
