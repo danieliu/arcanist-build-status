@@ -163,7 +163,7 @@ EOTEXT
 
     $out = array();
     foreach ($revisions as $revision_id => $revision) {
-      $desc = 'D'.$revision_id.': '.$revision['fields']['title'];
+      $desc = tsprintf("**D%s**: %s", $revision_id, $revision['fields']['title']);
       $status = $revision['fields']['status']['name'];
       $status_color = $revision['fields']['status']['color.ansi'];
       $diff_phid = $revision['fields']['diffPHID'];
