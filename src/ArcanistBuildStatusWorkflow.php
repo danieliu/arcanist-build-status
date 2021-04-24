@@ -38,9 +38,75 @@ EOTEXT
     return true;
   }
 
-  private function loadCommitInfo() {
+  /*
+   * Copied from `ArcanistGitAPI` due to getAllBranches changed to private.
+   */
+  private function getBranchNameFromRef($ref) {
+    $count = 0;
+    $branch = preg_replace('/^refs\/heads\//', '', $ref, 1, $count);
+    if ($count !== 1) {
+      return null;
+    }
+
+    if (!strlen($branch)) {
+      return null;
+    }
+
+    return $branch;
+  }
+
+  /*
+   * Copied from `ArcanistGitAPI` due to it being changed to private.
+   */
+  private function getAllBranches() {
     $repository_api = $this->getRepositoryAPI();
-    $branches = $repository_api->getAllBranches();
+    $field_list = array(
+      '%(refname)',
+      '%(objectname)',
+      '%(committerdate:raw)',
+      '%(tree)',
+      '%(subject)',
+      '%(subject)%0a%0a%(body)',
+      '%02',
+    );
+
+    list($stdout) = $repository_api->execxLocal(
+      'for-each-ref --format=%s -- refs/heads',
+      implode('%01', $field_list));
+
+    $current = $repository_api->getBranchName();
+    $result = array();
+
+    $lines = explode("\2", $stdout);
+    foreach ($lines as $line) {
+      $line = trim($line);
+      if (!strlen($line)) {
+        continue;
+      }
+
+      $fields = explode("\1", $line, 6);
+      list($ref, $hash, $epoch, $tree, $desc, $text) = $fields;
+
+      $branch = $this->getBranchNameFromRef($ref);
+      if ($branch !== null) {
+        $result[] = array(
+          'current' => ($branch === $current),
+          'name' => $branch,
+          'ref' => $ref,
+          'hash' => $hash,
+          'tree' => $tree,
+          'epoch' => (int)$epoch,
+          'desc' => $desc,
+          'text' => $text,
+        );
+      }
+    }
+
+    return $result;
+  }
+
+  private function loadCommitInfo() {
+    $branches = $this->getAllBranches();
     if (!$branches) {
       throw new ArcanistUsageException(
         pht('No branches in this working copy.'));
@@ -65,6 +131,7 @@ EOTEXT
       }
     }
 
+    $repository_api = $this->getRepositoryAPI();
     if ($repository_api instanceof ArcanistMercurialAPI) {
       $futures = array();
       foreach ($branches as $branch) {
